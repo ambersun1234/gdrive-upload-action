@@ -1,7 +1,7 @@
 [![build](https://github.com/mathisve/gdrive-upload-action/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/mathisve/gdrive-upload-action/actions)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mathisve/gdrive-upload-action)](https://goreportcard.com/report/github.com/mathisve/gdrive-upload-action)
 
-# Github action that uploads files to Google Drive
+# Github action that uploads file to Google Drive
 
 ## User guide
 

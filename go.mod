@@ -1,9 +1,11 @@
 module gdrive-upload-action
 
-go 1.18
+go 1.21
+
+toolchain go1.22.4
 
 require (
-	github.com/sethvargo/go-githubactions v0.3.0
+	github.com/sethvargo/go-githubactions v1.3.1
 	golang.org/x/oauth2 v0.0.0-20210220000619-9bb904979d93
 	google.golang.org/api v0.40.0
 )

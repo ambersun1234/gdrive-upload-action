@@ -106,16 +106,13 @@ func main() {
 
 	// parse overwrite flag
 	overwriteStr := githubactions.GetInput(overwrite)
-	var overwrite bool
-	if overwriteStr == "" || overwriteStr == "true" {
+	var overwrite bool = false
+	if overwriteStr == "true" {
 		overwrite = true
-	} else if overwriteStr == "false" {
-		overwrite = false
 	}
 
-	uploadNewFile := true
-	if overwrite {
-		// Query for all files in google drive directory with name = <name>
+	switch overwrite {
+	case true:
 		filenameQuery := fmt.Sprintf("name = '%s' and '%s' in parents", name, folderId)
 		filesQueryCallResult, err := svc.Files.
 			List().
@@ -123,40 +120,43 @@ func main() {
 			SupportsAllDrives(true).
 			Q(filenameQuery).
 			Do()
-
 		if err != nil {
-			githubactions.Fatalf(fmt.Sprintf("querying file: %+v failed with error: %v", filenameQuery, err))
+			githubactions.Fatalf(fmt.Sprintf("failed to query name %s in %s", name, folderId))
 		}
 
-		if len(filesQueryCallResult.Files) != 0 {
-			githubactions.Debugf("Found %d files matching file name and folder", len(filesQueryCallResult.Files))
-			// overwrite each file's content, do not upload a new file
-			uploadNewFile = false
-			for _, driveFile := range filesQueryCallResult.Files {
-				_, err = svc.Files.
-					Update(driveFile.Id, &drive.File{Name: name}).
-					SupportsAllDrives(true).
-					Media(file).
-					Do()
-				githubactions.Debugf(
-					"Updating file %s (in folder %s) with id %s", driveFile.Name, folderId, driveFile.Id,
-				)
-				if err != nil {
-					githubactions.Fatalf(fmt.Sprintf("updating file: %+v failed with error: %v", driveFile, err))
-				}
-			}
+		size := len(filesQueryCallResult.Files)
+		if size == 0 {
+			githubactions.Fatalf(fmt.Sprintf("cannot find %s in %s", name, folderId))
 		}
-	}
-	if uploadNewFile {
+		if size > 1 {
+			githubactions.Fatalf("over 1 file matched the query condition")
+		}
+
+		githubactions.Infof(fmt.Sprintf("found %v matched files under %s", size, folderId))
+
+		// overwrite file content
+		driveFile := filesQueryCallResult.Files[0]
+		_, err = svc.Files.
+			Update(driveFile.Id, &drive.File{Name: name}).
+			SupportsAllDrives(true).
+			Media(file).
+			Do()
+		if err != nil {
+			githubactions.Fatalf(fmt.Sprintf("updating file: %+v failed with error: %v", driveFile, err))
+		}
+		githubactions.Infof(
+			"Updating file %s (in folder %s) with id %s", driveFile.Name, folderId, driveFile.Id,
+		)
+
+	default:
 		f := &drive.File{
 			Name:    name,
 			Parents: []string{folderId},
 		}
-		githubactions.Debugf("Creating file %s in folder %s", f.Name, folderId)
-		_, err = svc.Files.Create(f).Media(file).SupportsAllDrives(true).Do()
-		if err != nil {
+		if _, err := svc.Files.Create(f).Media(file).SupportsAllDrives(true).Do(); err != nil {
 			githubactions.Fatalf(fmt.Sprintf("creating file: %+v failed with error: %v", f, err))
 		}
+		githubactions.Infof("Creating file %s in folder %s", f.Name, folderId)
 	}
 }
 
